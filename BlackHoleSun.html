@@ -9,41 +9,99 @@
 
 </style>
   
-<body>
+<body onload="start()">
 <div>
-<canvas id="canvas"></canvas>
+	<canvas id="canvas"></canvas>
 </div>
 
-	<audio id="audio" controls>
-		<source src="song.m4a" type="audio/mpeg">
-	</audio>
+<audio id="audio" controls>
+	<source src="song.m4a" type="audio/mpeg">
+</audio>
 	
+	
+<div id="text">
+	Welcome to the Black Hole Sun.
+</div>
+
+<div id="text2">
+	Once the scroll has finished,
+</div>
+
+<div id="text3">
+	Click to start and click again to change the shapes.
+</div>
+
+<div id="text4">
+	Use the LEFT and RIGHT arrow keys 
+</div>
+
+<div id="text5">
+	To change the speed of the flowing stars.
+</div>
 <script type="text/javascript">
 	var canvas = document.getElementById("canvas");
 	var context = canvas.getContext("2d");
-	var width = window.innerWidth;
+	var width = window.innerWidth - 25;
 	var height = window.innerHeight;
 	var xCirc;
 	var yCirc;
 	var rCirc;
-	var animate = true;
-	var circles = [];
+	var animate = false;
+	var shapes = ['circle', 'square', 'triangle', 'heart', 'star', 'text'];
+	var shape = 0;
 	var song = document.getElementById("audio");
-	song.autoplay = true;
-	song.load();
+	song.autoplay = false;
+	var num = 1;
+	var step = 0;
+	var steps = 0;
+	var delay = 50;
+	var text = document.getElementById("text").innerHTML;
+	var text2 = document.getElementById("text2").innerHTML;	
+	var text3 = document.getElementById("text3").innerHTML;
+	var text4 = document.getElementById("text4").innerHTML;
+	var text5 = document.getElementById("text5").innerHTML;
 	
 	canvas.width = width;
 	canvas.height = height;
 	
 	makeParticles();
-
-
+	
+	function click(){
+		shape++;
+		if (shape > shapes.length - 1){
+			shape = 0;
+		}
+		
+		var pType = shapes[shape];
+		for (var i = 0; i < particles.length; i++){
+			particles[i].particleType = pType;
+		}
+	}
+	
+	function doKeyDown(evt){
+		
+		switch (evt.keyCode){
+			case 39: 	
+				num += 1;
+				if (num > 30){
+					num = 30;
+				}
+				break;
+			case 37:
+				num -= 1;
+				if (num < 1){
+					num = 1;
+				}
+				break;	
+		}
+	}
+	
 	function makeParticles() {
 		xCenter = canvas.width/2;
 		yCenter = canvas.height/2;
 		particles = [];
 		for (var i = 0; i < 1000; i++){
-			particles.push(new Particle());
+			particles.push(new Particle(shapes[shape]));
 		}
 	}
 	
@@ -52,15 +110,15 @@
 		var r2 = canvas.width - (canvas.width/2);
 		var gradient1 = context.createRadialGradient(width/2, height/2, r1, width/2, height/2, r2);
 		
-		gradient1.addColorStop(0, "yellow");
-		gradient1.addColorStop(1, "purple");
+		gradient1.addColorStop(0, "#46C7C7");
+		gradient1.addColorStop(1, "#0C090A");
 		context.fillStyle = gradient1;
 		context.fillRect(0, 0, canvas.width, canvas.height);
 		
 		var gradient2 = context.createRadialGradient(width/2, height/2, 120, width/2, height/2, 150);
 		gradient2.addColorStop(0, "black");
-		gradient2.addColorStop(.75, "black");
-		gradient2.addColorStop(1, "orange");
+		gradient2.addColorStop(.5, "#008080");
+		gradient2.addColorStop(1, "#54C571");
 	
 		context.beginPath();
 		context.arc(width/2, height/2, 150, 0, 2 * Math.PI, true);
@@ -72,13 +130,48 @@
 		
 		if(animate){
 			window.requestAnimationFrame(start);
+		} else if (!animate){
+			window.requestAnimationFrame(scroll);
 		}
 				
 		draw();
 		moveParticles();
+		canvas.addEventListener("click", click);
+		console.log(num);
 	}
 	
+	window.onload = function() {
+		context.fillStyle = "black";
+		context.font = "20pt Courier";
+		context.textAlign = "center";
+		context.textBaseline = "middle";
+		step = 0;
+		steps = canvas.height + 50;
+		scroll();
+	};
 
+	function scroll() {
+		step++;
+		context.clearRect(0, 0, canvas.width, canvas.height);
+		context.save();
+		context.translate(canvas.width / 2, step);
+		context.fillText(text, 0, 0);
+		context.fillText(text2, 0, 40);
+		context.fillText(text3, 0, 80);
+		context.fillText(text4, 0, 120);
+		context.fillText(text5, 0, 160);
+		context.restore();
+		if (step == steps)
+			step = 0;
+		if (step < steps && step != 0)
+			var timer = setTimeout('scroll()', 15);
+		if (step == 0) {
+			animate = true;
+			song.autoplay = true;
+			song.load();
+			start();
+		}
+	}
 	
 	function Particle() {
 		this.x = Math.floor((Math.random() * canvas.width) + 1);
@@ -86,12 +179,70 @@
 		this.z = Math.floor((Math.random() * canvas.width));
 		
 		var grad = context.createRadialGradient(this.x, this.y, Math.floor((Math.random() * 10) + 1), this.x, this.y, Math.floor((Math.random() * 10) + 1));
-		var colors = ["red", "green", "blue", "orange", "purple", "yellow", "white"];
+		var colors = ["#4CC417", "#3EA055", "#54C571", "#41A317", "#46C7C7", "#4EE2EC", "#00FFFF", "#008080", "#57FEFF", "#3BB9FF", "#1F45FC"];
 		
 		grad.addColorStop(0, colors[Math.floor(Math.random()*colors.length)]);
 		grad.addColorStop(1, colors[Math.floor(Math.random()*colors.length)]);
 		this.color = grad;
 		this.radius = 1;
+		
+		this.draw = function() {
+			xP = (xCenter - this.x) * (canvas.width/this.z);
+			xP += xCenter;
+			yP = (yCenter - this.y) * (canvas.width/this.z);
+			yP += yCenter;
+			rP = (canvas.width/this.z);
+			
+			switch (this.particleType) {
+				case 'circle':
+					context.beginPath();
+					context.arc(xP, yP, rP, 0, 2 * Math.PI, true);
+					context.fillStyle = this.color;
+					context.fill();
+					break;
+				case 'square':
+					context.beginPath();
+					context.rect(xP, yP, rP * 3, rP * 3);
+					context.fillStyle = this.color;
+					context.fill();
+					break;
+				case 'triangle':
+					context.beginPath();
+					context.moveTo(xP, yP);
+					context.lineTo(xP + (rP * 2), yP + (rP * 2));
+					context.lineTo(xP - (rP * 2), yP + (rP * 2));
+					context.fillStyle = this.color;
+					context.fill();
+					break;
+				case 'heart':
+					context.beginPath();
+					context.moveTo(xP, yP - (rP * 2));
+					context.bezierCurveTo(xP - (rP * 6), yP - (rP * 11), xP - (rP * 2), yP - (rP * 12), xP, yP - (rP * 7));
+					context.bezierCurveTo(xP + (rP * 2), yP - (rP * 12), xP + (rP * 6), yP - (rP * 11), xP, yP - (rP * 2));
+					context.fillStyle = this.color;
+					context.fill();
+					break;
+				case 'star':
+					context.beginPath();
+					context.moveTo(xP, yP);
+					context.lineTo(xP - (rP * 1), yP + (rP * 3));
+					context.lineTo(xP - (rP * 4), yP + (rP * 3));
+					context.lineTo(xP - (rP * 2), yP + (rP * 6));
+					context.lineTo(xP - (rP * 3), yP + (rP * 9));
+					context.lineTo(xP, yP + (rP * 7));
+					context.lineTo(xP + (rP * 3), yP + (rP * 9));
+					context.lineTo(xP + (rP * 2), yP + (rP * 6));
+					context.lineTo(xP + (rP * 4), yP + (rP * 3));
+					context.lineTo(xP + (rP * 1), yP + (rP * 3));
+					context.fillStyle = this.color;
+					context.fill();
+					break;
+				case 'text':
+					context.fillStyle = this.color;
+					context.fillText("Black Hole Sun", xP, yP);
+					break;
+			}
+		}
 	}
 	
 	function draw() {	
@@ -99,76 +250,50 @@
 		Circle();
 		
 		for (var i = 0; i < particles.length; i++){
-			var p = particles[i];
+			var p = particles[i].draw();
+
 			
-			xP = (xCenter - p.x) * (canvas.width/p.z);
-			xP += xCenter;
-			yP = (yCenter - p.y) * (canvas.width/p.z);
-			yP += yCenter;
-			rP = (canvas.width/p.z);
-			
-			if (i % 2 == 0){
-				context.beginPath();
-				context.rect(xP, yP, rP * 3, rP * 3);
-				context.fillStyle = p.color;
-				context.fill();
-			} else if (i % 3 == 0){
-				context.beginPath();
-				context.moveTo(xP, yP);
-				context.lineTo(xP - (rP * 1), yP + (rP * 3));
-				context.lineTo(xP - (rP * 4), yP + (rP * 3));
-				context.lineTo(xP - (rP * 2), yP + (rP * 6));
-				context.lineTo(xP - (rP * 3), yP + (rP * 9));
-				context.lineTo(xP, yP + (rP * 7));
-				context.lineTo(xP + (rP * 3), yP + (rP * 9));
-				context.lineTo(xP + (rP * 2), yP + (rP * 6));
-				context.lineTo(xP + (rP * 4), yP + (rP * 3));
-				context.lineTo(xP + (rP * 1), yP + (rP * 3));
-				context.fillStyle = p.color;
-				context.fill();
-			} else if (i % 5 == 0){
-				context.beginPath();
-				context.moveTo(xP, yP);
-				context.lineTo(xP + (rP * 2), yP + (rP * 2));
-				context.lineTo(xP - (rP * 2), yP + (rP * 2));
-				context.fillStyle = p.color;
-				context.fill();
-			} else if (i % 7 == 0){
-				context.beginPath();
-				context.moveTo(xP, yP - (rP * 2));
-				//context.lineTo(xP - (rP * 6), yP - (rP * 7));
-				context.bezierCurveTo(xP - (rP * 6), yP - (rP * 11), xP - (rP * 2), yP - (rP * 12), xP, yP - (rP * 7));
-				context.bezierCurveTo(xP + (rP * 2), yP - (rP * 12), xP + (rP * 6), yP - (rP * 11), xP, yP - (rP * 2));
-				//context.lineTo(xP, yP);
-				context.fillStyle = p.color;
-				context.fill();
-			} else if (i % 9 == 0){
-				context.beginPath();
-				context.arc(xP, yP, rP, 0, 2 * Math.PI, true);
-				context.fillStyle = p.color;
-				context.fill();
-			} else {
-				context.fillStyle = p.color;
-				context.fillText("Black Hole Sun", xP, yP);
-			}
 	
-			xCirc -= p.x;
-			yCirc -= p.y;
+
 		}
 		
 	}
 	
 	function moveParticles() {
+		
 		for (var j = 0; j < particles.length; j++){
 			var p = particles[j];
-			p.z -= 2;
+			/*if (increase == true){
+				num += 1;
+				if (num > 20){
+					num = 20;
+				}
+			}
+			
+			if (decrease == true){
+				num -= 1;
+				if (num < 1){
+					num = 1;
+				}
+			}
+			
+			switch (evt.keyCode){
+				case 39: 	
+					num = 5;
+					break;
+				case 37:
+					num = 1;
+					break;
+			}*/
+			
+			p.z -= num;
 			if (p.z <= 0){
 				p.z = canvas.width;
 			} 
 		}
 	}
 	
-	start();
+	window.addEventListener("keydown", doKeyDown);
 
 
 </script>
